@@ -2,8 +2,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     description TEXT,
-    due_date TIMESTAMPTZ,
-    status VARCHAR(20) NOT NULL CHECK (
+    due_date TIMESTAMPTZ NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ASSIGNED' CHECK (
         status IN (
             'ASSIGNED',
             'IN_PROGRESS',

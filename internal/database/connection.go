@@ -11,15 +11,7 @@ import (
 )
 
 func NewPostgresPool(cfg *config.Config) (*pgxpool.Pool, error) {
-	connString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBName,
-		cfg.DBSSLMode,
-	)
+	connString := BuildDatabaseURL(cfg)
 
 	pool, err := pgxpool.New(context.Background(), connString)
 	if err != nil {
@@ -35,4 +27,16 @@ func NewPostgresPool(cfg *config.Config) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func BuildDatabaseURL(cfg *config.Config) string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBName,
+		cfg.DBSSLMode,
+	)
 }

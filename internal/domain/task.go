@@ -15,7 +15,7 @@ type Task struct {
 	ID          uint       `gorm:"primaryKey" json:"id"`
 	Title       string     `gorm:"size:200;not null" json:"title"`
 	Description string     `gorm:"type:text" json:"description"`
-	DueDate     *time.Time `gorm:"column:due_date" json:"due_date"`
+	DueDate     time.Time  `gorm:"column:due_date;not null" json:"due_date"`
 	Status      TaskStatus `gorm:"size:20;not null" json:"status"`
 	AssignedTo  uint       `gorm:"column:assigned_to;not null;index" json:"assigned_to"`
 	CreatedBy   uint       `gorm:"column:created_by;not null;index" json:"created_by"`

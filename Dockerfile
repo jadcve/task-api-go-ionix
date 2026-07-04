@@ -14,6 +14,7 @@ FROM gcr.io/distroless/static-debian12
 WORKDIR /
 
 COPY --from=builder /bin/task-api /task-api
+COPY --from=builder /app/migrations /migrations
 
 EXPOSE 8080
 

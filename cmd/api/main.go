@@ -8,6 +8,10 @@ import (
 	"task-api-go-ionix/internal/config"
 	"task-api-go-ionix/internal/database"
 	"task-api-go-ionix/internal/handler"
+	"task-api-go-ionix/internal/middleware"
+	"task-api-go-ionix/internal/repository"
+	"task-api-go-ionix/internal/routes"
+	"task-api-go-ionix/internal/service"
 )
 
 func main() {
@@ -16,16 +20,33 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
+	databaseURL := database.BuildDatabaseURL(cfg)
+
+	if err := database.RunMigrations(databaseURL, cfg.MigrationsPath); err != nil {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
+
+	log.Printf("migrations executed successfully or no changes pending")
+
 	dbPool, err := database.NewPostgresPool(cfg)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer dbPool.Close()
 
+	if err := database.SeedInitialAdmin(dbPool); err != nil {
+		log.Fatalf("failed to seed initial admin: %v", err)
+	}
+
 	router := gin.Default()
 
 	healthHandler := handler.NewHealthHandler()
-	router.GET("/health", healthHandler.GetHealth)
+	userRepository := repository.NewUserRepository(dbPool)
+	authService := service.NewAuthService(userRepository, cfg.JWTSecret, cfg.JWTExpirationHours)
+	authHandler := handler.NewAuthHandler(authService)
+	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
+
+	routes.RegisterRoutes(router, healthHandler, authHandler, authMiddleware)
 
 	if err := router.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)
