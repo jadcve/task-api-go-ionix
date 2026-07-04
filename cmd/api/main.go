@@ -42,11 +42,16 @@ func main() {
 
 	healthHandler := handler.NewHealthHandler()
 	userRepository := repository.NewUserRepository(dbPool)
+	taskRepository := repository.NewTaskRepository(dbPool)
 	authService := service.NewAuthService(userRepository, cfg.JWTSecret, cfg.JWTExpirationHours)
+	userService := service.NewUserService(userRepository)
+	taskService := service.NewTaskService(taskRepository)
 	authHandler := handler.NewAuthHandler(authService)
+	userHandler := handler.NewUserHandler(userService)
+	taskHandler := handler.NewTaskHandler(taskService)
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 
-	routes.RegisterRoutes(router, healthHandler, authHandler, authMiddleware)
+	routes.RegisterRoutes(router, healthHandler, authHandler, userHandler, taskHandler, authMiddleware)
 
 	if err := router.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)

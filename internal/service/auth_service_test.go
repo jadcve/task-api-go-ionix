@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"task-api-go-ionix/internal/common/enums"
 	"task-api-go-ionix/internal/domain"
 	"task-api-go-ionix/internal/dto"
 	apperrors "task-api-go-ionix/internal/errors"
@@ -69,7 +70,7 @@ func newActiveUser(t *testing.T, id uint, email string, password string) *domain
 		Name:               "Administrator",
 		Email:              email,
 		PasswordHash:       hash,
-		Role:               domain.UserRoleAdmin,
+		Role:               enums.UserRoleAdmin,
 		MustChangePassword: false,
 		IsActive:           true,
 	}

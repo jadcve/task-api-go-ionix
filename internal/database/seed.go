@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"task-api-go-ionix/internal/domain"
+	"task-api-go-ionix/internal/common/enums"
 	"task-api-go-ionix/internal/security"
 )
 
@@ -42,7 +42,7 @@ func SeedInitialAdmin(db *pgxpool.Pool) error {
 		adminName,
 		adminEmail,
 		hash,
-		string(domain.UserRoleAdmin),
+		string(enums.UserRoleAdmin),
 		false,
 		true,
 	)

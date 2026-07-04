@@ -16,13 +16,28 @@ Implementado actualmente:
 - Middleware de autenticacion Bearer.
 - Seeder idempotente de admin inicial.
 - Respuesta HTTP estandar para endpoints de negocio.
+- CRUD de usuarios para perfil ADMIN:
+	- Crear usuarios EXECUTOR/AUDITOR con contrasena temporal.
+	- Listar usuarios.
+	- Obtener usuario por ID.
+	- Actualizar usuario (sin tocar password_hash ni must_change_password).
+	- Soft delete (is_active=false).
+- CRUD de tareas para perfil ADMIN:
+	- Crear tareas con estado inicial ASSIGNED.
+	- Listar tareas.
+	- Obtener tarea por ID.
+	- Actualizar tareas solo si estan en ASSIGNED.
+	- Soft delete de tareas solo si estan en ASSIGNED.
+- Middleware de autorizacion por rol (ADMIN para `/api/users`).
+- Middleware de autorizacion por rol (ADMIN para `/api/tasks`).
+- Tests unitarios para AuthService y UserService con repositorios fake.
+- Tests unitarios para TaskService (reglas de asignacion, vencimiento y estado).
 
 Pendiente (segun enunciado):
 
-- CRUD completo de usuarios (perfil Administrador).
-- CRUD completo de tareas y reglas avanzadas de estado.
 - Funcionalidad de perfil Ejecutor.
 - Funcionalidad de perfil Auditor.
+- Comentarios de tareas vencidas (flujo Ejecutor).
 
 ## Stack tecnico
 
@@ -46,6 +61,8 @@ Arquitectura por capas:
 - `domain`: entidades y enums de negocio.
 - `dto`: contratos de entrada/salida.
 - `middleware`: cross-cutting concerns HTTP.
+	- Auth middleware: valida Bearer JWT.
+	- Role middleware: controla permisos por perfil.
 - `security`: JWT y password hashing.
 - `response`: formato estandar de salida API.
 
@@ -60,6 +77,8 @@ Mas detalle en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Password hashing con bcrypt.
 - JWT firmado (HMAC) con `sub`, `role`, `iat`, `exp`.
 - Endpoints protegidos con middleware Bearer.
+- Endpoints de usuarios protegidos por rol ADMIN.
+- Endpoints de tareas protegidos por rol ADMIN.
 - Seeder de admin con password hasheado.
 - No se expone `password_hash` en respuestas.
 
@@ -71,6 +90,7 @@ Reglas:
 
 - No se usa AutoMigrate.
 - Evolucion de esquema explicita, versionada y reproducible.
+- Soporte de soft delete en tareas via `deleted_at` (migracion incremental).
 
 Comandos:
 
@@ -136,6 +156,49 @@ make down
 - `PATCH /api/auth/change-password` (protegido)
 - `POST /api/auth/logout` (protegido)
 
+### Users (solo ADMIN)
+
+- `POST /api/users` (protegido + rol ADMIN)
+- `GET /api/users` (protegido + rol ADMIN)
+- `GET /api/users/:id` (protegido + rol ADMIN)
+- `PUT /api/users/:id` (protegido + rol ADMIN)
+- `DELETE /api/users/:id` (protegido + rol ADMIN)
+
+### Tasks (solo ADMIN)
+
+- `POST /api/tasks` (protegido + rol ADMIN)
+- `GET /api/tasks` (protegido + rol ADMIN)
+- `GET /api/tasks/:id` (protegido + rol ADMIN)
+- `PUT /api/tasks/:id` (protegido + rol ADMIN)
+- `DELETE /api/tasks/:id` (protegido + rol ADMIN)
+
+## Reglas de negocio de usuarios (Sprint 2)
+
+- El ADMIN solo puede crear usuarios con rol `EXECUTOR` o `AUDITOR`.
+- No se permite crear ni actualizar usuarios al rol `ADMIN` desde el CRUD.
+- El usuario creado parte con:
+	- `must_change_password=true`
+	- `is_active=true`
+	- contrasena temporal aleatoria segura (solo visible en respuesta inicial para esta prueba tecnica).
+- El delete de usuarios es logico (`is_active=false`), no fisico.
+- Nunca se expone `password_hash` en respuestas.
+
+## Reglas de negocio de tareas (Sprint 3A)
+
+- Solo ADMIN puede administrar tareas.
+- En create:
+	- `assigned_to` debe existir.
+	- `assigned_to` debe tener rol `EXECUTOR`.
+	- `due_date` debe ser futura.
+	- el estado inicial siempre es `ASSIGNED`.
+- En update:
+	- solo se puede actualizar si la tarea esta en `ASSIGNED`.
+	- campos permitidos: `title`, `description`, `due_date`, `assigned_to`.
+	- no se permite asignar a roles distintos de `EXECUTOR`.
+- En delete:
+	- solo se permite eliminar si esta en `ASSIGNED`.
+	- se aplica soft delete (`deleted_at`), no borrado fisico.
+
 ## Formato estandar de respuesta
 
 Exito:
@@ -179,6 +242,24 @@ make test
 
 Incluye tests unitarios del modulo Auth service con repositorio fake (sin dependencia de PostgreSQL real).
 
+Incluye tambien tests unitarios de UserService para:
+
+- creacion de usuarios EXECUTOR y AUDITOR;
+- rechazo de rol ADMIN;
+- rechazo de email duplicado;
+- validacion de `must_change_password` e `is_active` en alta;
+- restriccion de update a rol ADMIN;
+- soft delete.
+
+Incluye tests unitarios de TaskService para:
+
+- create exitoso con estado inicial `ASSIGNED`;
+- rechazo de asignacion a `AUDITOR`;
+- rechazo de asignacion a `ADMIN`;
+- rechazo por `due_date` vencida;
+- update solo permitido en `ASSIGNED`;
+- delete solo permitido en `ASSIGNED`.
+
 ## Validacion manual rapida
 
 ```bash
@@ -200,6 +281,26 @@ curl -X PATCH "http://localhost:8080/api/auth/change-password" \
 # Logout
 curl -i -X POST "http://localhost:8080/api/auth/logout" \
 	-H "Authorization: Bearer TOKEN"
+
+# Crear usuario EXECUTOR (solo ADMIN)
+curl -X POST "http://localhost:8080/api/users" \
+	-H "Content-Type: application/json" \
+	-H "Authorization: Bearer TOKEN" \
+	-d '{"name":"Juan Ejecutor","email":"juan@test.com","role":"EXECUTOR"}'
+
+# Listar usuarios (solo ADMIN)
+curl -X GET "http://localhost:8080/api/users" \
+	-H "Authorization: Bearer TOKEN"
+
+# Crear tarea (solo ADMIN)
+curl -X POST "http://localhost:8080/api/tasks" \
+	-H "Content-Type: application/json" \
+	-H "Authorization: Bearer TOKEN" \
+	-d '{"title":"Tarea Sprint 3A","description":"Implementacion inicial","due_date":"2026-07-20T10:00:00Z","assigned_to":2}'
+
+# Listar tareas (solo ADMIN)
+curl -X GET "http://localhost:8080/api/tasks" \
+	-H "Authorization: Bearer TOKEN"
 ```
 
 ## Mapa de cumplimiento del enunciado (Ejercicio 1)
@@ -207,8 +308,10 @@ curl -i -X POST "http://localhost:8080/api/auth/logout" \
 - Login con perfiles: implementado (token con role).
 - Cambio de contrasena: implementado.
 - Logout: implementado.
-- CRUD usuarios/tareas: pendiente.
-- Reglas por perfil Administrador/Ejecutor/Auditor: parcial.
+- CRUD de usuarios (ADMIN): implementado.
+- CRUD de tareas (ADMIN): implementado.
+- Reglas por perfil Administrador: implementado para auth + usuarios + tareas.
+- Reglas por perfil Ejecutor/Auditor: pendiente.
 - Diagrama y decisiones de arquitectura: implementado en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Uso de IA en este proyecto
