@@ -1,19 +1,19 @@
 # Task API Go Ionix
 
-API REST en Go para gestion de usuarios y tareas con control por roles (ADMIN, EXECUTOR, AUDITOR), autenticacion JWT, migraciones SQL versionadas y arquitectura por capas.
+API REST en Go para gestión de usuarios y tareas con control por roles (ADMIN, EXECUTOR, AUDITOR), autenticación JWT, migraciones SQL versionadas y arquitectura por capas.
 
 ## Desafio
 
-Este proyecto implementa una API evaluable para un challenge tecnico, priorizando:
+Este proyecto implementa una API evaluable para un challenge técnico, priorizando:
 
 - reglas de negocio claras por rol;
 - trazabilidad de cambios por sprints;
-- verificabilidad con tests, Docker y coleccion Postman;
-- documentacion tecnica para revision rapida.
+- verificabilidad con tests, Docker y colección Postman;
+- documentación técnica para revision rapida.
 
-## Stack tecnico
+## Stack técnico
 
-- Go 1.25+
+- Go 1.25 o superior
 - Gin
 - PostgreSQL 16
 - pgx/pgxpool
@@ -32,7 +32,7 @@ Capas principales:
 - `database`: conexion, migraciones y seed.
 - `domain`: entidades de negocio.
 - `dto`: contratos de entrada/salida.
-- `middleware`: autenticacion/autorizacion.
+- `middleware`: autenticación/autorización.
 - `security`: JWT y hashing.
 - `response`: formato estandar de respuesta.
 
@@ -105,7 +105,7 @@ Referencias en [.env.example](.env.example):
 
 - Carpeta: [migrations](migrations)
 - Estrategia: versionadas, sin automigrate.
-- Ejecucion automatica al iniciar la API.
+- Ejecución automatica al iniciar la API.
 - Comandos:
 
 ```bash
@@ -134,7 +134,7 @@ Configurable por variables `ADMIN_*`.
 - Usuarios:
 - ADMIN solo crea/actualiza EXECUTOR y AUDITOR.
 - alta con `must_change_password=true`.
-- baja logica (`is_active=false`).
+- baja lógica (`is_active=false`).
 
 - Tareas ADMIN:
 - `assigned_to` debe existir y ser EXECUTOR.
@@ -152,7 +152,7 @@ Configurable por variables `ADMIN_*`.
 - Auditoria:
 - AUDITOR solo lectura de tareas no eliminadas.
 
-## Maquina de estados de tareas
+## Máquina de estados de tareas
 
 Diagrama Mermaid: [docs/diagrams/task-state-machine.mmd](docs/diagrams/task-state-machine.mmd)
 
@@ -252,7 +252,7 @@ Ejemplo OK:
 }
 ```
 
-## Decisiones tecnicas
+## Decisiones técnicas
 
 - Arquitectura por capas para separar transporte, negocio y persistencia.
 - SQL explicito con repositorios (control fino de consultas y reglas).
@@ -264,8 +264,8 @@ Ejemplo OK:
 
 - Password hashing con bcrypt.
 - JWT con claims de `sub` y `role`.
-- Middleware Bearer para autenticacion.
-- Middleware de rol para autorizacion.
+- Middleware Bearer para autenticación.
+- Middleware de rol para autorización.
 - Evitar log de secretos (passwords, tokens).
 
 ## Pendientes / mejoras futuras
@@ -273,8 +273,7 @@ Ejemplo OK:
 - Swagger/OpenAPI automatizado (pendiente por costo de cambios en esta entrega).
 - Pruebas de integracion HTTP automatizadas.
 - Estrategia de refresh tokens y revocacion.
-- Auditoria estructurada con correlation id.
 
 ## Uso de IA
 
-Se uso IA como apoyo para generacion/refactor de codigo bajo revision humana, definicion de prompts, documentacion y validacion. Todas las decisiones tecnicas y resultados finales fueron revisados manualmente antes de considerar el entregable como valido.
+Se uso IA como apoyo para generacion/refactor de codigo bajo revision humana, documentacion y validacion. Todas las decisiones técnicas y resultados finales fueron revisados manualmente antes de considerar el entregable como valido.
