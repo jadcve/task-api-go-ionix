@@ -1,0 +1,7 @@
+flowchart LR
+    A[Client / Postman] --> B[Gin Router]
+    B --> C[Middlewares\nAuth + Role]
+    C --> D[Handlers]
+    D --> E[Services]
+    E --> F[Repositories]
+    F --> G[(PostgreSQL)]
