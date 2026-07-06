@@ -13,7 +13,7 @@ Este proyecto implementa una API evaluable para un challenge técnico, priorizan
 
 ## Stack técnico
 
-- Go 1.25 o superior
+- Go 1.25+
 - Gin
 - PostgreSQL 16
 - pgx/pgxpool
