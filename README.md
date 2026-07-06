@@ -218,18 +218,84 @@ go test ./...
 
 1. Importar [postman/Task API.postman_collection.json](postman/Task%20API.postman_collection.json).
 2. Verificar variable `base_url = http://localhost:8080`.
-3. Ejecutar en orden recomendado:
-- `Auth/Login admin`
-- `Users/Create executor`
-- `Users/Create auditor`
-- `Tasks Admin/Create task`
-- `Auth/Executor login`
-- `Tasks Executor/List my tasks`
-- `Tasks Executor/Update my task status`
-- `Auth/Auditor login`
-- `Audit/Audit tasks`
+3. Ejecutar carpetas y requests en el orden numerado:
+- `01 - Health`
+- `02 - Authentication`
+- `03 - Users`
+- `04 - Tasks - Admin`
+- `05 - Tasks - Executor`
+- `06 - Audit`
 
 La colección incluye scripts basicos para guardar tokens e ids.
+
+# 🚀 Flujo recomendado para evaluar la aplicación
+
+1. Levantar la aplicación:
+
+```bash
+docker compose up --build
+```
+
+2. Verificar Health:
+- `GET /health`
+- `GET /health/db`
+
+3. Login ADMIN:
+- Email: `admin@test.com`
+- Password: `Admin123`
+
+4. Crear usuario EXECUTOR.
+
+5. Crear usuario AUDITOR.
+
+6. Login EXECUTOR.
+
+7. Login AUDITOR.
+
+8. Crear tarea desde ADMIN.
+
+9. Flujo del EXECUTOR:
+- listar tareas;
+- ver detalle;
+- cambiar estado;
+- transición válida;
+- transición inválida.
+
+10. Flujo de tarea vencida:
+- modificar fecha desde PostgreSQL;
+- validar que no puede cambiar estado;
+- validar que puede comentar.
+
+11. Flujo AUDITOR:
+- listar tareas;
+- validar permisos.
+
+12. Restricciones de negocio (validar):
+- ADMIN no puede crear otro ADMIN;
+- ADMIN no puede asignar tareas a AUDITOR;
+- ADMIN no puede editar tareas IN_PROGRESS;
+- ADMIN no puede eliminar tareas COMPLETED;
+- EXECUTOR no puede acceder a tareas ajenas;
+- AUDITOR no puede modificar recursos.
+
+13. Validación en PostgreSQL:
+- revisar `users`;
+- revisar `tasks`;
+- revisar `task_comments`.
+
+Nota: la colección Postman sigue exactamente este orden de evaluación.
+
+## Credenciales de prueba
+
+Administrador:
+- Email: `admin@test.com`
+- Password: `Admin123`
+
+Usuarios creados por el administrador:
+- Password temporal fija: `ChangeMe123!`
+- `must_change_password=true`
+
+Nota: esta contraseña fija se utiliza únicamente para facilitar la evaluación del desafío. En un entorno de producción sería generada aleatoriamente y enviada mediante un canal seguro.
 
 ## Health DB
 

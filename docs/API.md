@@ -13,6 +13,22 @@ Formato de respuesta estandar:
 }
 ```
 
+## Orden recomendado de prueba
+
+1. Levantar la aplicación (`docker compose up --build`).
+2. Verificar `GET /health` y `GET /health/db`.
+3. Login ADMIN (`admin@test.com` / `Admin123`).
+4. Crear usuario EXECUTOR.
+5. Crear usuario AUDITOR.
+6. Login EXECUTOR.
+7. Login AUDITOR.
+8. Crear tarea desde ADMIN.
+9. Flujo EXECUTOR: listar tareas, ver detalle, transición válida, transición inválida.
+10. Flujo de tarea vencida: forzar vencimiento en DB, validar bloqueo de cambio de estado y permitir comentario.
+11. Flujo AUDITOR: listar tareas y validar permisos de solo lectura.
+12. Restricciones de negocio: creación ADMIN prohibida, asignación a AUDITOR prohibida, edición/eliminación ADMIN por estado, acceso cruzado EXECUTOR prohibido, modificación por AUDITOR prohibida.
+13. Validar en PostgreSQL las tablas `users`, `tasks` y `task_comments`.
+
 ## Health
 
 ### GET /health
