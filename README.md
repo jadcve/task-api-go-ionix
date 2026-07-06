@@ -229,7 +229,7 @@ go test ./...
 - `Auth/Auditor login`
 - `Audit/Audit tasks`
 
-La coleccion incluye scripts basicos para guardar tokens e ids.
+La colección incluye scripts basicos para guardar tokens e ids.
 
 ## Health DB
 
