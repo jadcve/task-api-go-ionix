@@ -16,17 +16,34 @@ type UpdateTaskRequest struct {
 	AssignedTo  *uint      `json:"assigned_to"`
 }
 
+type UpdateTaskStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
+type CreateTaskCommentRequest struct {
+	Comment string `json:"comment" binding:"required"`
+}
+
+type TaskCommentResponse struct {
+	ID        uint      `json:"id"`
+	TaskID    uint      `json:"task_id"`
+	UserID    uint      `json:"user_id"`
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type TaskResponse struct {
-	ID               uint      `json:"id"`
-	Title            string    `json:"title"`
-	Description      string    `json:"description"`
-	DueDate          time.Time `json:"due_date"`
-	Status           string    `json:"status"`
-	AssignedTo       uint      `json:"assigned_to"`
-	AssignedUserName string    `json:"assigned_user_name"`
-	CreatedBy        uint      `json:"created_by"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ID               uint                  `json:"id"`
+	Title            string                `json:"title"`
+	Description      string                `json:"description"`
+	DueDate          time.Time             `json:"due_date"`
+	Status           string                `json:"status"`
+	AssignedTo       uint                  `json:"assigned_to"`
+	AssignedUserName string                `json:"assigned_user_name"`
+	CreatedBy        uint                  `json:"created_by"`
+	CreatedAt        time.Time             `json:"created_at"`
+	UpdatedAt        time.Time             `json:"updated_at"`
+	Comments         []TaskCommentResponse `json:"comments,omitempty"`
 }
 
 type TaskListResponse struct {

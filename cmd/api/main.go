@@ -40,7 +40,7 @@ func main() {
 
 	router := gin.Default()
 
-	healthHandler := handler.NewHealthHandler()
+	healthHandler := handler.NewHealthHandler(dbPool)
 	userRepository := repository.NewUserRepository(dbPool)
 	taskRepository := repository.NewTaskRepository(dbPool)
 	authService := service.NewAuthService(userRepository, cfg.JWTSecret, cfg.JWTExpirationHours)

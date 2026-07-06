@@ -1,0 +1,31 @@
+erDiagram
+    User ||--o{ Task : assigned_to
+    User ||--o{ Task : created_by
+    Task ||--o{ TaskComment : has
+    User ||--o{ TaskComment : writes
+
+    User {
+        uint id PK
+        string name
+        string email
+        string role
+        bool is_active
+    }
+
+    Task {
+        uint id PK
+        string title
+        string status
+        datetime due_date
+        uint assigned_to FK
+        uint created_by FK
+        datetime deleted_at
+    }
+
+    TaskComment {
+        uint id PK
+        uint task_id FK
+        uint user_id FK
+        string comment
+        datetime created_at
+    }

@@ -1,326 +1,280 @@
 # Task API Go Ionix
 
-API REST desarrollada en Go para la prueba tecnica, con enfoque en arquitectura por capas, seguridad basica, migraciones SQL versionadas y calidad incremental sobre completitud.
+API REST en Go para gestion de usuarios y tareas con control por roles (ADMIN, EXECUTOR, AUDITOR), autenticacion JWT, migraciones SQL versionadas y arquitectura por capas.
 
-## Estado del proyecto
+## Desafio
 
-Implementado actualmente:
+Este proyecto implementa una API evaluable para un challenge tecnico, priorizando:
 
-- Migraciones SQL versionadas (sin AutoMigrate).
-- Dominio base: usuarios, tareas y comentarios.
-- Autenticacion JWT:
-	- Login.
-	- Usuario autenticado (`/api/auth/me`).
-	- Cambio de contrasena.
-	- Logout.
-- Middleware de autenticacion Bearer.
-- Seeder idempotente de admin inicial.
-- Respuesta HTTP estandar para endpoints de negocio.
-- CRUD de usuarios para perfil ADMIN:
-	- Crear usuarios EXECUTOR/AUDITOR con contrasena temporal.
-	- Listar usuarios.
-	- Obtener usuario por ID.
-	- Actualizar usuario (sin tocar password_hash ni must_change_password).
-	- Soft delete (is_active=false).
-- CRUD de tareas para perfil ADMIN:
-	- Crear tareas con estado inicial ASSIGNED.
-	- Listar tareas.
-	- Obtener tarea por ID.
-	- Actualizar tareas solo si estan en ASSIGNED.
-	- Soft delete de tareas solo si estan en ASSIGNED.
-- Middleware de autorizacion por rol (ADMIN para `/api/users`).
-- Middleware de autorizacion por rol (ADMIN para `/api/tasks`).
-- Tests unitarios para AuthService y UserService con repositorios fake.
-- Tests unitarios para TaskService (reglas de asignacion, vencimiento y estado).
-
-Pendiente (segun enunciado):
-
-- Funcionalidad de perfil Ejecutor.
-- Funcionalidad de perfil Auditor.
-- Comentarios de tareas vencidas (flujo Ejecutor).
+- reglas de negocio claras por rol;
+- trazabilidad de cambios por sprints;
+- verificabilidad con tests, Docker y coleccion Postman;
+- documentacion tecnica para revision rapida.
 
 ## Stack tecnico
 
 - Go 1.25+
-- Gin (HTTP)
-- PostgreSQL
-- pgx (acceso a datos)
-- golang-migrate (migraciones SQL)
-- bcrypt (hash de contrasenas)
-- JWT (auth token)
-- Docker + Docker Compose
+- Gin
+- PostgreSQL 16
+- pgx/pgxpool
+- JWT (HMAC)
+- bcrypt
+- golang-migrate
+- Docker y Docker Compose
 
-## Arquitectura
+## Arquitectura por capas
 
-Arquitectura por capas:
+Capas principales:
 
-- `handler`: entrada HTTP y mapeo request/response.
-- `service`: reglas de negocio y orquestacion.
-- `repository`: persistencia y consultas SQL.
+- `handler`: transporte HTTP, bind/validate, mapping de errores.
+- `service`: reglas de negocio.
+- `repository`: acceso a datos SQL.
 - `database`: conexion, migraciones y seed.
-- `domain`: entidades y enums de negocio.
+- `domain`: entidades de negocio.
 - `dto`: contratos de entrada/salida.
-- `middleware`: cross-cutting concerns HTTP.
-	- Auth middleware: valida Bearer JWT.
-	- Role middleware: controla permisos por perfil.
-- `security`: JWT y password hashing.
-- `response`: formato estandar de salida API.
+- `middleware`: autenticacion/autorizacion.
+- `security`: JWT y hashing.
+- `response`: formato estandar de respuesta.
 
 Flujo:
 
-`request -> handler -> service -> repository -> database`
+`request -> gin router -> middleware -> handler -> service -> repository -> PostgreSQL`
 
-Mas detalle en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Diagrama Mermaid: [docs/diagrams/architecture.mmd](docs/diagrams/architecture.mmd)
 
-## Seguridad aplicada
+## Estructura de carpetas
 
-- Password hashing con bcrypt.
-- JWT firmado (HMAC) con `sub`, `role`, `iat`, `exp`.
-- Endpoints protegidos con middleware Bearer.
-- Endpoints de usuarios protegidos por rol ADMIN.
-- Endpoints de tareas protegidos por rol ADMIN.
-- Seeder de admin con password hasheado.
-- No se expone `password_hash` en respuestas.
+```text
+cmd/
+  api/
+  migrate/
+internal/
+  common/enums/
+  config/
+  database/
+  domain/
+  dto/
+  errors/
+  handler/
+  middleware/
+  repository/
+  response/
+  routes/
+  security/
+  service/
+migrations/
+docs/
+  API.md
+  ARCHITECTURE.md
+  diagrams/
+postman/
+  Task API.postman_collection.json
+```
+
+## Ejecutar con Docker
+
+1. Copiar variables de ejemplo:
+
+```bash
+cp .env.example .env
+```
+
+2. Levantar stack:
+
+```bash
+docker compose up --build
+```
+
+3. Detener stack:
+
+```bash
+docker compose down
+```
+
+## Variables de entorno
+
+Referencias en [.env.example](.env.example):
+
+- `APP_PORT`
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSLMODE`
+- `JWT_SECRET`, `JWT_EXPIRATION_HOURS`
+- `MIGRATIONS_PATH`
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`
 
 ## Migraciones SQL
 
-Las migraciones viven en `migrations/` y se ejecutan al iniciar la API.
-
-Reglas:
-
-- No se usa AutoMigrate.
-- Evolucion de esquema explicita, versionada y reproducible.
-- Soporte de soft delete en tareas via `deleted_at` (migracion incremental).
-
-Comandos:
+- Carpeta: [migrations](migrations)
+- Estrategia: versionadas, sin automigrate.
+- Ejecucion automatica al iniciar la API.
+- Comandos:
 
 ```bash
 make migrate-up
 make migrate-down
 ```
 
-## Variables de entorno
+## Usuario admin inicial
 
-Copiar `.env.example` a `.env`.
+Se crea de forma idempotente al iniciar la app:
 
-```env
-APP_ENV=development
-APP_PORT=8080
+- Email: `admin@test.com`
+- Password: `Admin123`
+- Rol: `ADMIN`
 
-DB_HOST=postgres
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=task_api
-DB_SSLMODE=disable
+Configurable por variables `ADMIN_*`.
 
-JWT_SECRET=change-me
-JWT_EXPIRATION_HOURS=24
-MIGRATIONS_PATH=file://migrations
+## Roles
 
-ADMIN_EMAIL=admin@test.com
-ADMIN_PASSWORD=Admin123
-ADMIN_NAME=Administrator
+- `ADMIN`: CRUD de usuarios y CRUD de tareas.
+- `EXECUTOR`: consulta de tareas propias, cambio de estado, comentarios en tareas vencidas.
+- `AUDITOR`: lectura de tareas globales.
+
+## Reglas de negocio principales
+
+- Usuarios:
+- ADMIN solo crea/actualiza EXECUTOR y AUDITOR.
+- alta con `must_change_password=true`.
+- baja logica (`is_active=false`).
+
+- Tareas ADMIN:
+- `assigned_to` debe existir y ser EXECUTOR.
+- `due_date` debe ser futura en create/update ADMIN.
+- estado inicial `ASSIGNED`.
+- update/delete ADMIN solo en `ASSIGNED`.
+- soft delete por `deleted_at`.
+
+- Tareas EXECUTOR:
+- solo opera tareas propias (`assigned_to == user_id`).
+- cambio de estado validado por transicion de estados.
+- no puede actualizar estado si esta vencida.
+- solo puede comentar si la tarea esta vencida.
+
+- Auditoria:
+- AUDITOR solo lectura de tareas no eliminadas.
+
+## Maquina de estados de tareas
+
+Diagrama Mermaid: [docs/diagrams/task-state-machine.mmd](docs/diagrams/task-state-machine.mmd)
+
+```mermaid
+stateDiagram-v2
+    [*] --> ASSIGNED
+    ASSIGNED --> IN_PROGRESS
+    ASSIGNED --> CANCELLED
+    IN_PROGRESS --> COMPLETED
+    IN_PROGRESS --> CANCELLED
 ```
 
-## Ejecucion local
+## Endpoints principales
 
-```bash
-go mod tidy
-make run
-```
-
-## Ejecucion con Docker Compose
-
-```bash
-make up
-make logs
-```
-
-Detener y limpiar volumen:
-
-```bash
-make down
-```
-
-## Endpoints disponibles
-
-### Salud
+Health:
 
 - `GET /health`
+- `GET /health/db`
 
-### Auth
+Auth:
 
 - `POST /api/auth/login`
-- `GET /api/auth/me` (protegido)
-- `PATCH /api/auth/change-password` (protegido)
-- `POST /api/auth/logout` (protegido)
+- `GET /api/auth/me`
+- `PATCH /api/auth/change-password`
+- `POST /api/auth/logout`
 
-### Users (solo ADMIN)
+Users (ADMIN):
 
-- `POST /api/users` (protegido + rol ADMIN)
-- `GET /api/users` (protegido + rol ADMIN)
-- `GET /api/users/:id` (protegido + rol ADMIN)
-- `PUT /api/users/:id` (protegido + rol ADMIN)
-- `DELETE /api/users/:id` (protegido + rol ADMIN)
+- `POST /api/users`
+- `GET /api/users`
+- `GET /api/users/:id`
+- `PUT /api/users/:id`
+- `DELETE /api/users/:id`
 
-### Tasks (solo ADMIN)
+Tasks ADMIN:
 
-- `POST /api/tasks` (protegido + rol ADMIN)
-- `GET /api/tasks` (protegido + rol ADMIN)
-- `GET /api/tasks/:id` (protegido + rol ADMIN)
-- `PUT /api/tasks/:id` (protegido + rol ADMIN)
-- `DELETE /api/tasks/:id` (protegido + rol ADMIN)
+- `POST /api/tasks`
+- `GET /api/tasks`
+- `GET /api/tasks/:id`
+- `PUT /api/tasks/:id`
+- `DELETE /api/tasks/:id`
 
-## Reglas de negocio de usuarios (Sprint 2)
+Tasks EXECUTOR:
 
-- El ADMIN solo puede crear usuarios con rol `EXECUTOR` o `AUDITOR`.
-- No se permite crear ni actualizar usuarios al rol `ADMIN` desde el CRUD.
-- El usuario creado parte con:
-	- `must_change_password=true`
-	- `is_active=true`
-	- contrasena temporal aleatoria segura (solo visible en respuesta inicial para esta prueba tecnica).
-- El delete de usuarios es logico (`is_active=false`), no fisico.
-- Nunca se expone `password_hash` en respuestas.
+- `GET /api/tasks/my`
+- `GET /api/tasks/my/:id`
+- `PATCH /api/tasks/my/:id/status`
+- `POST /api/tasks/my/:id/comments`
 
-## Reglas de negocio de tareas (Sprint 3A)
+Audit (AUDITOR):
 
-- Solo ADMIN puede administrar tareas.
-- En create:
-	- `assigned_to` debe existir.
-	- `assigned_to` debe tener rol `EXECUTOR`.
-	- `due_date` debe ser futura.
-	- el estado inicial siempre es `ASSIGNED`.
-- En update:
-	- solo se puede actualizar si la tarea esta en `ASSIGNED`.
-	- campos permitidos: `title`, `description`, `due_date`, `assigned_to`.
-	- no se permite asignar a roles distintos de `EXECUTOR`.
-- En delete:
-	- solo se permite eliminar si esta en `ASSIGNED`.
-	- se aplica soft delete (`deleted_at`), no borrado fisico.
+- `GET /api/audit/tasks`
 
-## Formato estandar de respuesta
+Detalle completo: [docs/API.md](docs/API.md)
 
-Exito:
+## Como correr tests
+
+```bash
+go test ./...
+```
+
+## Como probar con Postman
+
+1. Importar [postman/Task API.postman_collection.json](postman/Task%20API.postman_collection.json).
+2. Verificar variable `base_url = http://localhost:8080`.
+3. Ejecutar en orden recomendado:
+- `Auth/Login admin`
+- `Users/Create executor`
+- `Users/Create auditor`
+- `Tasks Admin/Create task`
+- `Auth/Executor login`
+- `Tasks Executor/List my tasks`
+- `Tasks Executor/Update my task status`
+- `Auth/Auditor login`
+- `Audit/Audit tasks`
+
+La coleccion incluye scripts basicos para guardar tokens e ids.
+
+## Health DB
+
+Endpoint `GET /health/db`:
+
+- responde `200` cuando PostgreSQL esta disponible;
+- responde `503` cuando no hay conectividad de DB;
+- usa formato estandar de respuesta.
+
+Ejemplo OK:
 
 ```json
 {
-	"success": true,
-	"message": "Login successful",
-	"data": {
-		"token": "...",
-		"user": {
-			"id": 1,
-			"name": "Administrator",
-			"email": "admin@test.com",
-			"role": "ADMIN",
-			"must_change_password": false
-		}
-	},
-	"errors": null
+  "success": true,
+  "message": "Database connection is healthy",
+  "data": {
+    "database": "ok"
+  },
+  "errors": null
 }
 ```
 
-Error:
+## Decisiones tecnicas
 
-```json
-{
-	"success": false,
-	"message": "Invalid credentials",
-	"data": null,
-	"errors": null
-}
-```
+- Arquitectura por capas para separar transporte, negocio y persistencia.
+- SQL explicito con repositorios (control fino de consultas y reglas).
+- Migraciones versionadas para reproducibilidad.
+- Soft delete en tareas para preservar historial.
+- Response envelope estandar para consistencia cliente.
 
-## Pruebas
+## Seguridad aplicada
 
-Ejecutar:
+- Password hashing con bcrypt.
+- JWT con claims de `sub` y `role`.
+- Middleware Bearer para autenticacion.
+- Middleware de rol para autorizacion.
+- Evitar log de secretos (passwords, tokens).
 
-```bash
-make test
-```
+## Pendientes / mejoras futuras
 
-Incluye tests unitarios del modulo Auth service con repositorio fake (sin dependencia de PostgreSQL real).
+- Swagger/OpenAPI automatizado (pendiente por costo de cambios en esta entrega).
+- Pruebas de integracion HTTP automatizadas.
+- Estrategia de refresh tokens y revocacion.
+- Auditoria estructurada con correlation id.
 
-Incluye tambien tests unitarios de UserService para:
+## Uso de IA
 
-- creacion de usuarios EXECUTOR y AUDITOR;
-- rechazo de rol ADMIN;
-- rechazo de email duplicado;
-- validacion de `must_change_password` e `is_active` en alta;
-- restriccion de update a rol ADMIN;
-- soft delete.
-
-Incluye tests unitarios de TaskService para:
-
-- create exitoso con estado inicial `ASSIGNED`;
-- rechazo de asignacion a `AUDITOR`;
-- rechazo de asignacion a `ADMIN`;
-- rechazo por `due_date` vencida;
-- update solo permitido en `ASSIGNED`;
-- delete solo permitido en `ASSIGNED`.
-
-## Validacion manual rapida
-
-```bash
-# Login
-curl -X POST "http://localhost:8080/api/auth/login" \
-	-H "Content-Type: application/json" \
-	-d '{"email":"admin@test.com","password":"Admin123"}'
-
-# Me (reemplazar TOKEN)
-curl -X GET "http://localhost:8080/api/auth/me" \
-	-H "Authorization: Bearer TOKEN"
-
-# Change password
-curl -X PATCH "http://localhost:8080/api/auth/change-password" \
-	-H "Content-Type: application/json" \
-	-H "Authorization: Bearer TOKEN" \
-	-d '{"current_password":"Admin123","new_password":"Admin123"}'
-
-# Logout
-curl -i -X POST "http://localhost:8080/api/auth/logout" \
-	-H "Authorization: Bearer TOKEN"
-
-# Crear usuario EXECUTOR (solo ADMIN)
-curl -X POST "http://localhost:8080/api/users" \
-	-H "Content-Type: application/json" \
-	-H "Authorization: Bearer TOKEN" \
-	-d '{"name":"Juan Ejecutor","email":"juan@test.com","role":"EXECUTOR"}'
-
-# Listar usuarios (solo ADMIN)
-curl -X GET "http://localhost:8080/api/users" \
-	-H "Authorization: Bearer TOKEN"
-
-# Crear tarea (solo ADMIN)
-curl -X POST "http://localhost:8080/api/tasks" \
-	-H "Content-Type: application/json" \
-	-H "Authorization: Bearer TOKEN" \
-	-d '{"title":"Tarea Sprint 3A","description":"Implementacion inicial","due_date":"2026-07-20T10:00:00Z","assigned_to":2}'
-
-# Listar tareas (solo ADMIN)
-curl -X GET "http://localhost:8080/api/tasks" \
-	-H "Authorization: Bearer TOKEN"
-```
-
-## Mapa de cumplimiento del enunciado (Ejercicio 1)
-
-- Login con perfiles: implementado (token con role).
-- Cambio de contrasena: implementado.
-- Logout: implementado.
-- CRUD de usuarios (ADMIN): implementado.
-- CRUD de tareas (ADMIN): implementado.
-- Reglas por perfil Administrador: implementado para auth + usuarios + tareas.
-- Reglas por perfil Ejecutor/Auditor: pendiente.
-- Diagrama y decisiones de arquitectura: implementado en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-## Uso de IA en este proyecto
-
-Se utilizo IA como apoyo para:
-
-- Acelerar scaffolding de capas y estructura base.
-- Proponer mejoras de consistencia en respuestas y auth.
-- Revisar redaccion tecnica de documentacion.
-
-Las decisiones de arquitectura, alcance, reglas de negocio aplicadas y validaciones finales fueron ajustadas y verificadas manualmente en el proyecto.
-
+Se uso IA como apoyo para generacion/refactor de codigo bajo revision humana, definicion de prompts, documentacion y validacion. Todas las decisiones tecnicas y resultados finales fueron revisados manualmente antes de considerar el entregable como valido.

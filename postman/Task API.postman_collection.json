@@ -1,0 +1,347 @@
+{
+  "info": {
+    "name": "Task API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Coleccion para validar Auth, Users, Tasks Admin, Tasks Executor y Audit."
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "admin_token", "value": "" },
+    { "key": "executor_token", "value": "" },
+    { "key": "auditor_token", "value": "" },
+    { "key": "executor_id", "value": "" },
+    { "key": "auditor_id", "value": "" },
+    { "key": "task_id", "value": "" },
+    { "key": "executor_email", "value": "executor@test.com" },
+    { "key": "auditor_email", "value": "auditor@test.com" },
+    { "key": "executor_temp_password", "value": "" },
+    { "key": "auditor_temp_password", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"Admin123\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData && jsonData.data && jsonData.data.token) {",
+                  "  pm.collectionVariables.set('admin_token', jsonData.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auth me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/api/auth/me"
+          }
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"Admin123\",\n  \"new_password\": \"Admin123\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/change-password"
+          }
+        },
+        {
+          "name": "Executor login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{executor_email}}\",\n  \"password\": \"{{executor_temp_password}}\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var jsonData = pm.response.json();",
+                  "  if (jsonData && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('executor_token', jsonData.data.token);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditor login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auditor_email}}\",\n  \"password\": \"{{auditor_temp_password}}\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var jsonData = pm.response.json();",
+                  "  if (jsonData && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('auditor_token', jsonData.data.token);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/api/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create executor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Executor User\",\n  \"email\": \"{{executor_email}}\",\n  \"role\": \"EXECUTOR\"\n}"
+            },
+            "url": "{{base_url}}/api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  var jsonData = pm.response.json();",
+                  "  if (jsonData.data && jsonData.data.user && jsonData.data.user.id) pm.collectionVariables.set('executor_id', jsonData.data.user.id);",
+                  "  if (jsonData.data && jsonData.data.temporary_password) pm.collectionVariables.set('executor_temp_password', jsonData.data.temporary_password);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create auditor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Auditor User\",\n  \"email\": \"{{auditor_email}}\",\n  \"role\": \"AUDITOR\"\n}"
+            },
+            "url": "{{base_url}}/api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  var jsonData = pm.response.json();",
+                  "  if (jsonData.data && jsonData.data.user && jsonData.data.user.id) pm.collectionVariables.set('auditor_id', jsonData.data.user.id);",
+                  "  if (jsonData.data && jsonData.data.temporary_password) pm.collectionVariables.set('auditor_temp_password', jsonData.data.temporary_password);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/api/users"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks Admin",
+      "item": [
+        {
+          "name": "Create task",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Task From Postman\",\n  \"description\": \"Created by admin\",\n  \"due_date\": \"2026-12-30T10:00:00Z\",\n  \"assigned_to\": {{executor_id}}\n}"
+            },
+            "url": "{{base_url}}/api/tasks"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  var jsonData = pm.response.json();",
+                  "  if (jsonData.data && jsonData.data.id) pm.collectionVariables.set('task_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List tasks admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/api/tasks"
+          }
+        },
+        {
+          "name": "Update task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Task Updated\",\n  \"description\": \"Updated by admin\"\n}"
+            },
+            "url": "{{base_url}}/api/tasks/{{task_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks Executor",
+      "item": [
+        {
+          "name": "List my tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{executor_token}}" }
+            ],
+            "url": "{{base_url}}/api/tasks/my"
+          }
+        },
+        {
+          "name": "Update my task status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{executor_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+            },
+            "url": "{{base_url}}/api/tasks/my/{{task_id}}/status"
+          }
+        },
+        {
+          "name": "Add comment to expired task",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{executor_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"No pude completar por dependencias externas\"\n}"
+            },
+            "url": "{{base_url}}/api/tasks/my/{{task_id}}/comments"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "item": [
+        {
+          "name": "Audit tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auditor_token}}" }
+            ],
+            "url": "{{base_url}}/api/audit/tasks"
+          }
+        }
+      ]
+    }
+  ]
+}

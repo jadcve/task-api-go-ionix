@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,8 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		}
 		return
 	}
+
+	log.Printf("user: created user_id=%d role=%s", user.ID, user.Role)
 
 	response.Success(c, 201, "User created successfully", gin.H{
 		"user":               user,

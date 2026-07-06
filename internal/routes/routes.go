@@ -17,6 +17,7 @@ func RegisterRoutes(
 	authMiddleware *middleware.AuthMiddleware,
 ) {
 	router.GET("/health", healthHandler.GetHealth)
+	router.GET("/health/db", healthHandler.GetDatabaseHealth)
 
 	authGroup := router.Group("/api/auth")
 	{
@@ -42,5 +43,18 @@ func RegisterRoutes(
 		tasksGroup.GET("/:id", taskHandler.GetTaskByID)
 		tasksGroup.PUT("/:id", taskHandler.UpdateTask)
 		tasksGroup.DELETE("/:id", taskHandler.DeleteTask)
+	}
+
+	myTasksGroup := router.Group("/api/tasks/my", authMiddleware.RequireAuth(), middleware.RoleMiddleware(string(enums.UserRoleExecutor)))
+	{
+		myTasksGroup.GET("", taskHandler.GetMyTasks)
+		myTasksGroup.GET("/:id", taskHandler.GetMyTaskByID)
+		myTasksGroup.PATCH("/:id/status", taskHandler.UpdateMyTaskStatus)
+		myTasksGroup.POST("/:id/comments", taskHandler.AddExpiredTaskComment)
+	}
+
+	auditTasksGroup := router.Group("/api/audit", authMiddleware.RequireAuth(), middleware.RoleMiddleware(string(enums.UserRoleAuditor)))
+	{
+		auditTasksGroup.GET("/tasks", taskHandler.GetTasksForAuditor)
 	}
 }

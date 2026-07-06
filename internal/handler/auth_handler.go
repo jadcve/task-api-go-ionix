@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 
 	"github.com/gin-gonic/gin"
 
@@ -28,6 +29,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	loginResponse, err := h.authService.Login(request)
 	if err != nil {
+		log.Printf("auth: login failed")
 		switch {
 		case errors.Is(err, apperrors.ErrInvalidCredentials):
 			response.Error(c, 401, "Invalid credentials", nil)
@@ -38,6 +40,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		}
 		return
 	}
+
+	log.Printf("auth: login successful user_id=%d role=%s", loginResponse.User.ID, loginResponse.User.Role)
 
 	response.Success(c, 200, "Login successful", loginResponse)
 }
