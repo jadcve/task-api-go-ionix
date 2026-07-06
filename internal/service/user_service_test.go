@@ -110,8 +110,8 @@ func TestCreateUserExecutorSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if tempPassword == "" {
-		t.Fatal("expected temporary password")
+	if tempPassword != "ChangeMe123!" {
+		t.Fatalf("expected fixed temporary password, got %s", tempPassword)
 	}
 	if res.Role != "EXECUTOR" {
 		t.Fatalf("expected role EXECUTOR, got %s", res.Role)

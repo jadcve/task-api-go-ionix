@@ -1,8 +1,6 @@
 package service
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"strings"
 
@@ -29,6 +27,8 @@ type UserService struct {
 	userRepository UserManagementRepository
 }
 
+const reviewerTemporaryPassword = "ChangeMe123!"
+
 func NewUserService(userRepository UserManagementRepository) *UserService {
 	return &UserService{userRepository: userRepository}
 }
@@ -47,10 +47,7 @@ func (s *UserService) CreateUser(request dto.CreateUserRequest) (*dto.UserRespon
 		return nil, "", apperrors.ErrEmailAlreadyExists
 	}
 
-	temporaryPassword, err := generateTemporaryPassword()
-	if err != nil {
-		return nil, "", err
-	}
+	temporaryPassword := reviewerTemporaryPassword
 
 	hash, err := security.HashPassword(temporaryPassword)
 	if err != nil {
@@ -76,7 +73,7 @@ func (s *UserService) CreateUser(request dto.CreateUserRequest) (*dto.UserRespon
 	}
 
 	// For this technical challenge we return the temporary password in the API response.
-	// In production this should be delivered through a secure channel such as email.
+	// In production this should be random and delivered through a secure channel.
 	return mapUserToResponse(user), temporaryPassword, nil
 }
 
@@ -164,13 +161,4 @@ func mapUserToResponse(user *domain.User) *dto.UserResponse {
 		CreatedAt:          user.CreatedAt,
 		UpdatedAt:          user.UpdatedAt,
 	}
-}
-
-func generateTemporaryPassword() (string, error) {
-	buffer := make([]byte, 18)
-	if _, err := rand.Read(buffer); err != nil {
-		return "", err
-	}
-
-	return base64.RawURLEncoding.EncodeToString(buffer), nil
 }

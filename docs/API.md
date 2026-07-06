@@ -112,7 +112,7 @@ Formato de respuesta estandar:
   "message": "User created successfully",
   "data": {
     "user": { "id": 2, "name": "Executor One", "email": "executor@test.com", "role": "EXECUTOR", "must_change_password": true, "is_active": true },
-    "temporary_password": "generated-password"
+    "temporary_password": "ChangeMe123!"
   },
   "errors": null
 }
