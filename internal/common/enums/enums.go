@@ -3,10 +3,11 @@ package enums
 type TaskStatus string
 
 const (
-	TaskStatusAssigned   TaskStatus = "ASSIGNED"
-	TaskStatusInProgress TaskStatus = "IN_PROGRESS"
-	TaskStatusCompleted  TaskStatus = "COMPLETED"
-	TaskStatusCancelled  TaskStatus = "CANCELLED"
+	TaskStatusAssigned         TaskStatus = "ASSIGNED"
+	TaskStatusStarted          TaskStatus = "STARTED"
+	TaskStatusWaiting          TaskStatus = "WAITING"
+	TaskStatusCompletedSuccess TaskStatus = "COMPLETED_SUCCESS"
+	TaskStatusCompletedError   TaskStatus = "COMPLETED_ERROR"
 )
 
 type UserRole string
@@ -19,7 +20,7 @@ const (
 
 func IsValidTaskStatus(status TaskStatus) bool {
 	switch status {
-	case TaskStatusAssigned, TaskStatusInProgress, TaskStatusCompleted, TaskStatusCancelled:
+	case TaskStatusAssigned, TaskStatusStarted, TaskStatusWaiting, TaskStatusCompletedSuccess, TaskStatusCompletedError:
 		return true
 	default:
 		return false
@@ -29,10 +30,12 @@ func IsValidTaskStatus(status TaskStatus) bool {
 func CanTransitionTaskStatus(from TaskStatus, to TaskStatus) bool {
 	switch from {
 	case TaskStatusAssigned:
-		return to == TaskStatusInProgress || to == TaskStatusCancelled
-	case TaskStatusInProgress:
-		return to == TaskStatusCompleted || to == TaskStatusCancelled
-	case TaskStatusCompleted, TaskStatusCancelled:
+		return to == TaskStatusStarted
+	case TaskStatusStarted:
+		return to == TaskStatusWaiting || to == TaskStatusCompletedSuccess || to == TaskStatusCompletedError
+	case TaskStatusWaiting:
+		return to == TaskStatusStarted
+	case TaskStatusCompletedSuccess, TaskStatusCompletedError:
 		return false
 	default:
 		return false

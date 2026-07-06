@@ -159,10 +159,11 @@ Diagrama Mermaid: [docs/diagrams/task-state-machine.mmd](docs/diagrams/task-stat
 ```mermaid
 stateDiagram-v2
     [*] --> ASSIGNED
-    ASSIGNED --> IN_PROGRESS
-    ASSIGNED --> CANCELLED
-    IN_PROGRESS --> COMPLETED
-    IN_PROGRESS --> CANCELLED
+  ASSIGNED --> STARTED
+  STARTED --> WAITING
+  WAITING --> STARTED
+  STARTED --> COMPLETED_SUCCESS
+  STARTED --> COMPLETED_ERROR
 ```
 
 ## Endpoints principales
@@ -273,8 +274,8 @@ docker compose up --build
 12. Restricciones de negocio (validar):
 - ADMIN no puede crear otro ADMIN;
 - ADMIN no puede asignar tareas a AUDITOR;
-- ADMIN no puede editar tareas IN_PROGRESS;
-- ADMIN no puede eliminar tareas COMPLETED;
+- ADMIN no puede editar tareas STARTED;
+- ADMIN no puede eliminar tareas COMPLETED_SUCCESS;
 - EXECUTOR no puede acceder a tareas ajenas;
 - AUDITOR no puede modificar recursos.
 

@@ -181,7 +181,7 @@ func TestCreateTaskPastDueDate(t *testing.T) {
 func TestUpdateTaskOnlyAssigned(t *testing.T) {
 	repo := newFakeTaskRepository()
 	repo.users[10] = &domain.User{ID: 10, Name: "Exec", Role: enums.UserRoleExecutor, IsActive: true}
-	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusInProgress, AssignedTo: 10, CreatedBy: 1}
+	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusStarted, AssignedTo: 10, CreatedBy: 1}
 	svc := NewTaskService(repo)
 
 	title := "Updated"
@@ -193,7 +193,7 @@ func TestUpdateTaskOnlyAssigned(t *testing.T) {
 
 func TestDeleteTaskOnlyAssigned(t *testing.T) {
 	repo := newFakeTaskRepository()
-	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusCompleted, AssignedTo: 10, CreatedBy: 1}
+	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusCompletedSuccess, AssignedTo: 10, CreatedBy: 1}
 	svc := NewTaskService(repo)
 
 	err := svc.DeleteTask(1)
@@ -248,18 +248,78 @@ func TestGetMyTaskBlocksForeignTask(t *testing.T) {
 	}
 }
 
-func TestUpdateMyTaskStatusAllowsAssignedToInProgress(t *testing.T) {
+func TestUpdateMyTaskStatusAllowsAssignedToStarted(t *testing.T) {
 	repo := newFakeTaskRepository()
 	repo.users[10] = &domain.User{ID: 10, Name: "Exec", Role: enums.UserRoleExecutor, IsActive: true}
 	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusAssigned, AssignedTo: 10, CreatedBy: 1}
 	svc := NewTaskService(repo)
 
-	res, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "IN_PROGRESS"})
+	res, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "STARTED"})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if res.Status != string(enums.TaskStatusInProgress) {
-		t.Fatalf("expected IN_PROGRESS, got %s", res.Status)
+	if res.Status != string(enums.TaskStatusStarted) {
+		t.Fatalf("expected STARTED, got %s", res.Status)
+	}
+}
+
+func TestUpdateMyTaskStatusAllowsStartedToWaiting(t *testing.T) {
+	repo := newFakeTaskRepository()
+	repo.users[10] = &domain.User{ID: 10, Name: "Exec", Role: enums.UserRoleExecutor, IsActive: true}
+	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusStarted, AssignedTo: 10, CreatedBy: 1}
+	svc := NewTaskService(repo)
+
+	res, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "WAITING"})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if res.Status != string(enums.TaskStatusWaiting) {
+		t.Fatalf("expected WAITING, got %s", res.Status)
+	}
+}
+
+func TestUpdateMyTaskStatusAllowsWaitingToStarted(t *testing.T) {
+	repo := newFakeTaskRepository()
+	repo.users[10] = &domain.User{ID: 10, Name: "Exec", Role: enums.UserRoleExecutor, IsActive: true}
+	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusWaiting, AssignedTo: 10, CreatedBy: 1}
+	svc := NewTaskService(repo)
+
+	res, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "STARTED"})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if res.Status != string(enums.TaskStatusStarted) {
+		t.Fatalf("expected STARTED, got %s", res.Status)
+	}
+}
+
+func TestUpdateMyTaskStatusAllowsStartedToCompletedSuccess(t *testing.T) {
+	repo := newFakeTaskRepository()
+	repo.users[10] = &domain.User{ID: 10, Name: "Exec", Role: enums.UserRoleExecutor, IsActive: true}
+	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusStarted, AssignedTo: 10, CreatedBy: 1}
+	svc := NewTaskService(repo)
+
+	res, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "COMPLETED_SUCCESS"})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if res.Status != string(enums.TaskStatusCompletedSuccess) {
+		t.Fatalf("expected COMPLETED_SUCCESS, got %s", res.Status)
+	}
+}
+
+func TestUpdateMyTaskStatusAllowsStartedToCompletedError(t *testing.T) {
+	repo := newFakeTaskRepository()
+	repo.users[10] = &domain.User{ID: 10, Name: "Exec", Role: enums.UserRoleExecutor, IsActive: true}
+	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusStarted, AssignedTo: 10, CreatedBy: 1}
+	svc := NewTaskService(repo)
+
+	res, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "COMPLETED_ERROR"})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if res.Status != string(enums.TaskStatusCompletedError) {
+		t.Fatalf("expected COMPLETED_ERROR, got %s", res.Status)
 	}
 }
 
@@ -268,7 +328,7 @@ func TestUpdateMyTaskStatusBlocksInvalidTransition(t *testing.T) {
 	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusAssigned, AssignedTo: 10, CreatedBy: 1}
 	svc := NewTaskService(repo)
 
-	_, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "COMPLETED"})
+	_, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "WAITING"})
 	if !errors.Is(err, apperrors.ErrInvalidTaskStatusTransition) {
 		t.Fatalf("expected ErrInvalidTaskStatusTransition, got %v", err)
 	}
@@ -279,9 +339,33 @@ func TestUpdateMyTaskStatusBlocksExpiredTask(t *testing.T) {
 	repo.tasks[1] = &domain.Task{ID: 1, Title: "Expired", DueDate: time.Now().Add(-time.Hour), Status: enums.TaskStatusAssigned, AssignedTo: 10, CreatedBy: 1}
 	svc := NewTaskService(repo)
 
-	_, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "IN_PROGRESS"})
+	_, err := svc.UpdateMyTaskStatus(10, 1, dto.UpdateTaskStatusRequest{Status: "STARTED"})
 	if !errors.Is(err, apperrors.ErrTaskExpired) {
 		t.Fatalf("expected ErrTaskExpired, got %v", err)
+	}
+}
+
+func TestAdminCannotUpdateTaskInStarted(t *testing.T) {
+	repo := newFakeTaskRepository()
+	repo.users[10] = &domain.User{ID: 10, Name: "Exec", Role: enums.UserRoleExecutor, IsActive: true}
+	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusStarted, AssignedTo: 10, CreatedBy: 1}
+	svc := NewTaskService(repo)
+
+	title := "Blocked"
+	_, err := svc.UpdateTask(1, dto.UpdateTaskRequest{Title: &title})
+	if !errors.Is(err, apperrors.ErrInvalidTaskStatus) {
+		t.Fatalf("expected ErrInvalidTaskStatus, got %v", err)
+	}
+}
+
+func TestAdminCannotDeleteTaskInCompletedSuccess(t *testing.T) {
+	repo := newFakeTaskRepository()
+	repo.tasks[1] = &domain.Task{ID: 1, Title: "Task", DueDate: time.Now().Add(time.Hour), Status: enums.TaskStatusCompletedSuccess, AssignedTo: 10, CreatedBy: 1}
+	svc := NewTaskService(repo)
+
+	err := svc.DeleteTask(1)
+	if !errors.Is(err, apperrors.ErrInvalidTaskStatus) {
+		t.Fatalf("expected ErrInvalidTaskStatus, got %v", err)
 	}
 }
 

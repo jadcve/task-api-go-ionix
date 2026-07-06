@@ -297,7 +297,7 @@
           }
         },
         {
-          "name": "04 - Restriction: Admin Cannot Edit IN_PROGRESS Task",
+          "name": "04 - Restriction: Admin Cannot Edit STARTED Task",
           "request": {
             "method": "PUT",
             "header": [
@@ -312,7 +312,7 @@
           }
         },
         {
-          "name": "05 - Restriction: Admin Cannot Delete COMPLETED Task",
+          "name": "05 - Restriction: Admin Cannot Delete COMPLETED_SUCCESS Task",
           "request": {
             "method": "DELETE",
             "header": [
@@ -347,7 +347,7 @@
           }
         },
         {
-          "name": "03 - Update My Task Status (Valid Transition)",
+          "name": "03 - Update My Task Status ASSIGNED to STARTED",
           "request": {
             "method": "PATCH",
             "header": [
@@ -356,13 +356,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+              "raw": "{\n  \"status\": \"STARTED\"\n}"
             },
             "url": "{{base_url}}/api/tasks/my/{{task_id}}/status"
           }
         },
         {
-          "name": "04 - Update My Task Status (Invalid Transition)",
+          "name": "04 - Update My Task Status STARTED to WAITING",
           "request": {
             "method": "PATCH",
             "header": [
@@ -371,13 +371,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"ASSIGNED\"\n}"
+              "raw": "{\n  \"status\": \"WAITING\"\n}"
             },
             "url": "{{base_url}}/api/tasks/my/{{task_id}}/status"
           }
         },
         {
-          "name": "05 - Update My Task Status To COMPLETED",
+          "name": "05 - Update My Task Status WAITING to STARTED",
           "request": {
             "method": "PATCH",
             "header": [
@@ -386,13 +386,43 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+              "raw": "{\n  \"status\": \"STARTED\"\n}"
             },
             "url": "{{base_url}}/api/tasks/my/{{task_id}}/status"
           }
         },
         {
-          "name": "06 - Add Comment To Expired Task",
+          "name": "06 - Update My Task Status STARTED to COMPLETED_SUCCESS",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{executor_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED_SUCCESS\"\n}"
+            },
+            "url": "{{base_url}}/api/tasks/my/{{task_id}}/status"
+          }
+        },
+        {
+          "name": "07 - Update My Task Status STARTED to COMPLETED_ERROR",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{executor_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED_ERROR\"\n}"
+            },
+            "url": "{{base_url}}/api/tasks/my/{{task_id}}/status"
+          }
+        },
+        {
+          "name": "08 - Add Comment To Expired Task",
           "request": {
             "method": "POST",
             "header": [
@@ -407,7 +437,7 @@
           }
         },
         {
-          "name": "07 - Restriction: Executor Cannot Access Foreign Task",
+          "name": "09 - Restriction: Executor Cannot Access Foreign Task",
           "request": {
             "method": "GET",
             "header": [

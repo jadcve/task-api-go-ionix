@@ -256,11 +256,11 @@ Formato de respuesta estandar:
 - Rol requerido: EXECUTOR
 - Request body:
 ```json
-{ "status": "IN_PROGRESS" }
+{ "status": "STARTED" }
 ```
 - Response ejemplo:
 ```json
-{ "success": true, "message": "Task status updated successfully", "data": { "id": 10, "status": "IN_PROGRESS" }, "errors": null }
+{ "success": true, "message": "Task status updated successfully", "data": { "id": 10, "status": "STARTED" }, "errors": null }
 ```
 - Errores esperados: 400, 401, 403, 404, 500
 
@@ -283,6 +283,6 @@ Formato de respuesta estandar:
 - Request body: no aplica
 - Response ejemplo:
 ```json
-{ "success": true, "message": "Tasks retrieved successfully", "data": [{ "id": 10, "status": "IN_PROGRESS" }], "errors": null }
+{ "success": true, "message": "Tasks retrieved successfully", "data": [{ "id": 10, "status": "WAITING" }], "errors": null }
 ```
 - Errores esperados: 401, 403, 500
