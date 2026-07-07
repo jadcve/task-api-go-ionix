@@ -1,7 +1,24 @@
-flowchart LR
-    A[Client / Postman] --> B[Gin Router]
-    B --> C[Middlewares\nAuth + Role]
-    C --> D[Handlers]
-    D --> E[Services]
-    E --> F[Repositories]
-    F --> G[(PostgreSQL)]
+flowchart TD
+    Client[Client / Postman] --> Router[Gin Router]
+
+    Router --> Public[Public Routes]
+    Router --> Protected[Protected Routes]
+
+    Public --> Health[Health Handler]
+    Public --> Auth[Auth Handler]
+
+    Protected --> AuthMiddleware[Auth Middleware]
+    AuthMiddleware --> RoleMiddleware[Role Middleware]
+    RoleMiddleware --> Handlers[HTTP Handlers]
+
+    Handlers --> Services[Application Services]
+    Services --> Repositories[Repositories]
+    Repositories --> DB[(PostgreSQL)]
+
+    Config[Config / Env] --> Router
+    Config --> Services
+    Security[JWT / Security] --> Auth
+    Security --> AuthMiddleware
+    Response[Response Standard] --> Handlers
+    Migrations[SQL Migrations] --> DB
+    Seeder[Seeder Admin] --> DB
